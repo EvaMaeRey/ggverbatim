@@ -7,7 +7,8 @@
 
 <!-- badges: end -->
 
-The goal of ggverbatim is to …
+The goal of ggverbatim is to reproduce visual table arrangement of
+tabular input to ggplot2. It feels a bit wrong.
 
 ## Installation
 
