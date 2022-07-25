@@ -8,27 +8,31 @@
 <!-- badges: end -->
 
 The goal of ggverbatim is to reproduce visual table arrangement of
-tabular input to ggplot2. It feels a bit wrong.
+tabular input to ggplot2. It feels a bit wrong; not likely to pursue
+further.
 
 ## Installation
 
-You can install the released version of ggverbatim from
-[CRAN](https://CRAN.R-project.org) with:
-
-``` r
-install.packages("ggverbatim")
-```
-
-And the development version from [GitHub](https://github.com/) with:
+Install the development version from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("EvaMaeRey/ggverbatim")
 ```
 
-## Example
+## Motivation
 
-This is a basic example which shows you how to solve a common problem:
+ggplot requires ‘tidy’ data, usually ‘long’. You may build a table in
+ggplot2, the visual arrangement isn’t tidy, but is nice for humans.
+
+Sometimes, you will have data in an untidy format (your raw data or data
+that you’ve already worked wth). And you might just want to reproduce it
+ggplot2 ‘verbatim’.
+
+Currently, this would be accomplished via a pivot to long (unpivot) and
+then repivot in the visual. That is what ggverbatim actually does under
+the hood. But if feels like a A -\> A process, not an A -\> B -\> A
+process.
 
 ``` r
 # library(ggverbatim)
@@ -92,26 +96,31 @@ ggplot() +
 
 <img src="man/figures/README-cars-1.png" width="100%" />
 
+# Therefore
+
 ``` r
+readLines("R/ggverbatim.R") ->
+verbatim_code
+```
 
-
-# so
-
+``` r
 ggverbatim <- function(data, rows_var = NULL, cols_var_name = "x"){
-  
-data %>% 
-  pivot_longer(cols = -1) %>% 
-ggplot() + 
-  aes(x = name) + 
-  labs(x = cols_var_name) + 
-  aes(y = {{rows_var}}) + 
-  aes(label = value) + 
-  aes(fill = value) + 
-  scale_x_discrete(position = "top") + 
-  scale_y_discrete(limits=rev)
-  
-}
 
+  data %>%
+    pivot_longer(cols = -1) %>%
+    ggplot() +
+    aes(x = name) +
+    labs(x = cols_var_name) +
+    aes(y = {{rows_var}}) +
+    aes(label = value) +
+    aes(fill = value) +
+    scale_x_discrete(position = "top") +
+    scale_y_discrete(limits=rev)
+
+}
+```
+
+``` r
 vis_arrangement %>% 
   ggverbatim(rows_var = Survived) + 
   geom_text() + 
@@ -119,4 +128,4 @@ vis_arrangement %>%
   labs(x = "Sex")
 ```
 
-<img src="man/figures/README-cars-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
