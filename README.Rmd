@@ -18,7 +18,11 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of ggverbatim is to reproduce visual table arrangement of tabular input to ggplot2.  It feels a bit wrong; not likely to pursue further. 
+A class of tables exists where table body values are like-in-kind. These tables differ from data-frames, in that for most data-frames, columns contain values of different types. 
+
+Such tables can be stored in a 'long form' of the data, which may be more analytic- friendly.  For example the long form, enables direct use in tools like ggplot2 and tidypivot. 
+
+The inspiration for ggverbatim is to reproduce tables that have values that are like-in-kind in ggplot2 in a way that feels natural. Products like heat maps and correlations tables can be prepped as tables and then ported to the popular data visualization tool without pivoting to longer.  This yields a closer visual match between the table input and the visual output. 
 
 ## Installation
 
@@ -33,9 +37,9 @@ devtools::install_github("EvaMaeRey/ggverbatim")
 
 ggplot requires 'tidy' data, usually 'long'.  You may build a table in ggplot2, the visual arrangement isn't tidy, but is nice for humans.
 
-Sometimes, you will have data in an untidy format (your raw data or data that you've already worked wth).  And you might just want to reproduce it ggplot2 'verbatim'.  
+Sometimes, you will have data in an untidy format (your raw data or data that you've already worked with).  And you might just want to reproduce it ggplot2 'verbatim'.  
 
-Currently, this would be accomplished via a pivot to long (unpivot) and then repivot in the visual.  That is what ggverbatim actually does under the hood.  But if feels like a A -> A process, not an A -> B -> A process.  
+Currently, this would be accomplished via a pivot to long ('unpivot') and then repivot through the visual specification.  That is what ggverbatim actually does under the hood.  But if feels like a A1 -> A2 process, not an A1 -> B -> A2 process.  
 
 
 
@@ -60,7 +64,7 @@ What is special about using `README.Rmd` instead of just `README.md`? You can in
 ```{r cars}
 vis_arrangement %>% 
   pivot_longer(cols = -1) %>% 
-ggplot() + 
+  ggplot() + 
   aes(x = name) + 
   labs(x = "Sex") + 
   aes(y = Survived) + 
@@ -72,9 +76,6 @@ ggplot() +
   scale_y_discrete(limits=rev)
 ```
 
-
-
-
 # Therefore
 
 ```{r}
@@ -83,15 +84,61 @@ verbatim_code
 ```
 
 ```{r, code = verbatim_code}
-
 ```
 
 
 ```{r}
 vis_arrangement %>% 
-  ggverbatim(rows_var = Survived) + 
-  geom_text() + 
-  geom_tile(alpha = .2) +
-  labs(x = "Sex")
+  ggverbatim() +
+  geom_tile(alpha = .8) +
+  aes(fill = value) +
+  aes(labels = value) +
+  geom_text(color = "oldlace") + 
+  labs(x = "Sex") + 
+  theme_minimal() 
+```
+# Another example; corrr
 
+The corrr project is designed to make correlation fit the 'tidy' paradigmn. corrr table outputs can be manipulated like data frames.
+
+```{r}
+library(MASS)
+library(corrr)
+
+# Simulate three columns correlating about .7 with each other
+mu <- rep(0, 3)
+Sigma <- matrix(.7, nrow = 3, ncol = 3) + diag(3)*.3
+seven <- mvrnorm(n = 1000, mu = mu, Sigma = Sigma)
+
+# Simulate three columns correlating about .4 with each other
+mu <- rep(0, 3)
+Sigma <- matrix(.4, nrow = 3, ncol = 3) + diag(3)*.6
+four <- mvrnorm(n = 1000, mu = mu, Sigma = Sigma)
+
+# Bind together
+d <- cbind(seven, four)
+colnames(d) <- paste0("v", 1:ncol(d))
+
+# Insert some missing values
+d[sample(1:nrow(d), 100, replace = TRUE), 1] <- NA
+d[sample(1:nrow(d), 200, replace = TRUE), 5] <- NA
+
+# Correlate
+corrr_example <- correlate(d)
+
+corrr_example %>% 
+  ggverbatim() + 
+  geom_tile() + 
+  scale_fill_viridis_c()
+
+corrr_example %>% 
+  ggverbatim() + 
+  geom_point(aes(size = value))
+
+corrr_example %>% 
+  shave() %>% 
+  ggverbatim() + 
+  geom_tile() + 
+  geom_text(aes(label = round(value, 2), color = value >.1)) +
+  scale_fill_viridis_c()
 ```
