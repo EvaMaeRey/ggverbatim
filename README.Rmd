@@ -45,7 +45,7 @@ Currently, this would be accomplished via a pivot to long ('unpivot') and then r
 
 ```{r example}
 # library(ggverbatim)
-library(tidyverse)
+library(tidyverse, verbose = F)
 library(magrittr)
 
 Titanic %>% 
@@ -97,6 +97,7 @@ vis_arrangement %>%
   labs(x = "Sex") + 
   theme_minimal() 
 ```
+
 # Another example; corrr
 
 The corrr project is designed to make correlation fit the 'tidy' paradigmn. corrr table outputs can be manipulated like data frames.
@@ -126,6 +127,7 @@ d[sample(1:nrow(d), 200, replace = TRUE), 5] <- NA
 # Correlate
 corrr_example <- correlate(d)
 
+
 corrr_example %>% 
   ggverbatim() + 
   geom_tile() + 
@@ -141,4 +143,28 @@ corrr_example %>%
   geom_tile() + 
   geom_text(aes(label = round(value, 2), color = value >.1)) +
   scale_fill_viridis_c()
+```
+
+
+```{r}
+corrr_example <- correlate(mtcars)
+
+corrr_example
+
+corrr_example %>% 
+  ggverbatim() + 
+  geom_tile() + 
+  scale_fill_viridis_c()
+
+corrr_example %>% 
+  ggverbatim() + 
+  geom_point(aes(size = value))
+
+corrr_example %>% 
+  shave() %>% 
+  ggverbatim() + 
+  geom_tile() + 
+  geom_text(aes(label = round(value, 2), color = value >.1)) +
+  scale_fill_viridis_c()
+
 ```

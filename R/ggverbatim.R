@@ -23,8 +23,15 @@ ggverbatim <- function(data, row_var_name = NULL, cols_var_name = "x", value_var
   row_var_name <- names(data)[1]
   names(data)[1] <- "row_var"
 
+  message("Variables that can be used for aesthetic mappying are 'x', and " |> paste(row_var_name))
+
+  col_headers <- names(data)
+  col_headers <- col_headers[2:length(col_headers)]
+
   data %>%
+    mutate(row_var = fct_inorder(row_var)) %>%
     pivot_longer(cols = -1) %>%
+    mutate(name = factor(name, levels = col_headers)) %>%
     rename(x = name) ->
   pivoted
 
