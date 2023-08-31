@@ -20,15 +20,13 @@
 #'   ggverbatim()
 ggverbatim <- function(data, cat_cols = 1,  row_var_name = NULL, cols_var_name = "x", value_var_name = NULL){
 
+  message("Variables that represented visually are ; e.g.  aesthetic mappying are 'x', and " |> paste(row_var_name))
+
   row_var_name <- names(data)[1]
   names(data)[1] <- "row_var"
 
-
   col_headers <- names(data)
   col_headers <- col_headers[2:length(col_headers)]
-
-  message("Variables that represented visually are ; e.g.  aesthetic mappying are 'x', and " |> paste(row_var_name))
-
 
   data %>%
     mutate(row_var = fct_inorder(row_var)) %>%
