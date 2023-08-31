@@ -7,19 +7,24 @@
 
 <!-- badges: end -->
 
-A class of tables exists where table body values are like-in-kind. These
-tables differ from data-frames, in that for most data-frames, columns
-contain values of different types.
+A class of tables are those whose body’s values are like-in-kind (LIK
+tables). These tables differ from data-frames, as most data-frames
+columns’ contain values of different types.
 
-Such tables can be stored in a ‘long form’ of the data, which may be
-more analytic- friendly. For example the long form, enables direct use
-in tools like ggplot2 and tidypivot.
+LIK tables arise from cross tabulation, in correlation analyses, and
+storage of time series data, for example.
 
-The inspiration for ggverbatim is to reproduce tables that have values
-that are like-in-kind in ggplot2 in a way that feels natural. Products
-like heat maps and correlations tables can be prepped as tables and then
-ported to the popular data visualization tool without pivoting to
-longer. This yields a closer visual match between the table input and
+Where a table’s body has like-in-kind values, they can be pivoted to a
+‘long form’ of the data, which may be more analytic-friendly for some
+tasks. For example the long form, enables direct use in tools like
+ggplot2.
+
+ggverbatim aims to faithfully reproduce input LIK tables in ggplot2, in
+a way that feels natural, and preserving the full functionality that
+ggplot2 provides. Products like heat maps and correlations tables can be
+prepped as tables and then ported to ggplot2 via the ggverbatim()
+function without pivoting to longer and without specifying factor
+ordering. This yields a close visual match between the table input and
 the visual output.
 
 ## Installation
@@ -41,7 +46,7 @@ that you’ve already worked with). And you might just want to reproduce
 it ggplot2 ‘verbatim’.
 
 Currently, this would be accomplished via a pivot to long (‘unpivot’)
-and then repivot through the visual specification. That is what
+and then wide-pivoted through the visual specification. That is what
 ggverbatim actually does under the hood. But if feels like a A1 -\> A2
 process, not an A1 -\> B -\> A2 process.
 
@@ -134,19 +139,21 @@ verbatim_code
 #'
 #'   vis_arrangement %>%
 #'   ggverbatim()
-ggverbatim <- function(data, row_var_name = NULL, cols_var_name = "x", value_var_name = NULL){
+ggverbatim <- function(data, cat_cols = 1,  row_var_name = NULL, cols_var_name = "x", value_var_name = NULL){
 
   row_var_name <- names(data)[1]
   names(data)[1] <- "row_var"
 
-  message("Variables that can be used for aesthetic mappying are 'x', and " |> paste(row_var_name))
 
   col_headers <- names(data)
   col_headers <- col_headers[2:length(col_headers)]
 
+  message("Variables that represented visually are ; e.g.  aesthetic mappying are 'x', and " |> paste(row_var_name))
+
+
   data %>%
     mutate(row_var = fct_inorder(row_var)) %>%
-    pivot_longer(cols = -1) %>%
+    pivot_longer(cols = -cat_cols) %>%
     mutate(name = factor(name, levels = col_headers)) %>%
     rename(x = name) ->
   pivoted
@@ -174,7 +181,19 @@ vis_arrangement %>%
   geom_text(color = "oldlace") + 
   labs(x = "Sex") + 
   theme_minimal() 
-#> Variables that can be used for aesthetic mappying are 'x', and  Survived
+#> Variables that represented visually are ; e.g.  aesthetic mappying are 'x', and  Survived
+#> Warning: Using an external vector in selections was deprecated in tidyselect 1.1.0.
+#> ℹ Please use `all_of()` or `any_of()` instead.
+#>   # Was:
+#>   data %>% select(cat_cols)
+#> 
+#>   # Now:
+#>   data %>% select(all_of(cat_cols))
+#> 
+#> See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
+#> This warning is displayed once every 8 hours.
+#> Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+#> generated.
 ```
 
 <img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
@@ -182,77 +201,11 @@ vis_arrangement %>%
 # Another example; corrr
 
 The corrr project is designed to make correlation fit the ‘tidy’
-paradigmn. corrr table outputs can be manipulated like data frames.
+paradigmn. the output of correlate is treated like a data frames in the
+ggplot2 setting due to the dispatch methodes used.
 
 ``` r
-library(MASS)
-#> 
-#> Attaching package: 'MASS'
-#> The following object is masked from 'package:dplyr':
-#> 
-#>     select
 library(corrr)
-
-# Simulate three columns correlating about .7 with each other
-mu <- rep(0, 3)
-Sigma <- matrix(.7, nrow = 3, ncol = 3) + diag(3)*.3
-seven <- mvrnorm(n = 1000, mu = mu, Sigma = Sigma)
-
-# Simulate three columns correlating about .4 with each other
-mu <- rep(0, 3)
-Sigma <- matrix(.4, nrow = 3, ncol = 3) + diag(3)*.6
-four <- mvrnorm(n = 1000, mu = mu, Sigma = Sigma)
-
-# Bind together
-d <- cbind(seven, four)
-colnames(d) <- paste0("v", 1:ncol(d))
-
-# Insert some missing values
-d[sample(1:nrow(d), 100, replace = TRUE), 1] <- NA
-d[sample(1:nrow(d), 200, replace = TRUE), 5] <- NA
-
-# Correlate
-corrr_example <- correlate(d)
-#> Correlation computed with
-#> • Method: 'pearson'
-#> • Missing treated using: 'pairwise.complete.obs'
-
-
-corrr_example %>% 
-  ggverbatim() + 
-  geom_tile() + 
-  scale_fill_viridis_c()
-#> Variables that can be used for aesthetic mappying are 'x', and  term
-```
-
-<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
-
-``` r
-
-corrr_example %>% 
-  ggverbatim() + 
-  geom_point(aes(size = value))
-#> Variables that can be used for aesthetic mappying are 'x', and  term
-#> Warning: Removed 6 rows containing missing values (`geom_point()`).
-```
-
-<img src="man/figures/README-unnamed-chunk-5-2.png" width="100%" />
-
-``` r
-
-corrr_example %>% 
-  shave() %>% 
-  ggverbatim() + 
-  geom_tile() + 
-  geom_text(aes(label = round(value, 2), color = value >.1)) +
-  scale_fill_viridis_c()
-#> Variables that can be used for aesthetic mappying are 'x', and  term
-#> Warning: Removed 21 rows containing missing values (`geom_text()`).
-```
-
-<img src="man/figures/README-unnamed-chunk-5-3.png" width="100%" />
-
-``` r
 corrr_example <- correlate(mtcars)
 #> Correlation computed with
 #> • Method: 'pearson'
@@ -279,32 +232,54 @@ corrr_example %>%
   ggverbatim() + 
   geom_tile() + 
   scale_fill_viridis_c()
-#> Variables that can be used for aesthetic mappying are 'x', and  term
+#> Variables that represented visually are ; e.g.  aesthetic mappying are 'x', and  term
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
 
 ``` r
 
 corrr_example %>% 
   ggverbatim() + 
   geom_point(aes(size = value))
-#> Variables that can be used for aesthetic mappying are 'x', and  term
+#> Variables that represented visually are ; e.g.  aesthetic mappying are 'x', and  term
 #> Warning: Removed 11 rows containing missing values (`geom_point()`).
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-5-2.png" width="100%" />
 
 ``` r
 
 corrr_example %>% 
-  shave() %>% 
+  shave(upper = FALSE) %>% 
   ggverbatim() + 
   geom_tile() + 
   geom_text(aes(label = round(value, 2), color = value >.1)) +
   scale_fill_viridis_c()
-#> Variables that can be used for aesthetic mappying are 'x', and  term
+#> Variables that represented visually are ; e.g.  aesthetic mappying are 'x', and  term
 #> Warning: Removed 66 rows containing missing values (`geom_text()`).
 ```
 
-<img src="man/figures/README-unnamed-chunk-6-3.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-5-3.png" width="100%" />
+
+``` r
+
+last_plot() +
+  geom_tile(data = . %>% filter(value > .7), 
+            color = "red", 
+            linewidth = 1.5, 
+            fill = alpha("red", .2))
+#> Warning: Removed 66 rows containing missing values (`geom_text()`).
+```
+
+<img src="man/figures/README-unnamed-chunk-5-4.png" width="100%" />
+
+# time series example
+
+``` r
+library(dplyr)
+dat <- read_csv("data-raw/API_AG.LND.ARBL.ZS_DS2_en_csv_v2_5734536/API_AG.LND.ARBL.ZS_DS2_en_csv_v2_5734536.csv", skip = 3) 
+
+dat %>% 
+  select(`Country Name`, `1961`:`1970`)
+```
