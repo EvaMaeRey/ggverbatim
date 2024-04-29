@@ -47,5 +47,3 @@ ggverbatim <- function(data, cat_cols = 1,  row_var_name = NULL, cols_var_name =
     scale_y_discrete(limits=rev)
 
 }
-
-

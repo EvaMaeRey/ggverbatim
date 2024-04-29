@@ -18,13 +18,27 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-A class of tables are those whose body's values are like-in-kind (LIK tables). These tables differ from data-frames, as most data-frames columns' contain values of different types. 
+Some tables have body's with values that are like-in-kind (LIK tables). These tables differ from data-frames, as most data-frames columns' contain values of different types. 
 
-LIK tables arise from cross tabulation, in correlation analyses, and storage of time series data, for example. 
+Tables that have bodies with like-in-kind values can arise from cross tabulation, correlation analyses, and storage of time series data, for example. 
 
-Where a table's body has like-in-kind values, they can be pivoted to a 'long form' of the data, which may be more analytic-friendly for some tasks.  For example the long form, enables direct use in tools like ggplot2. 
 
-ggverbatim aims to faithfully reproduce input LIK tables in ggplot2, in a way that feels natural, and preserving the full functionality that ggplot2 provides.  Products like heat maps and correlations tables can be prepped as tables and then ported to ggplot2 via the ggverbatim() function without pivoting to longer and without specifying factor ordering.  This yields a close visual match between the table input and the visual output. 
+
+```{r, examples}
+Titanic[ , , Age = "Child", Survived = "No"]
+```
+
+To use such data with the popular data visualization tool ggplot2, data is usually pivoted to its long form, where most of the column names (e.g. years in time series wide storage) are stored in a single column.
+
+```{r}
+
+
+
+```
+
+
+
+ggverbatim aims to faithfully reproduce input LIK in ggplot2 without the pivoting step.  Thus, products like heat maps and correlations tables can be prepped as tables and directly ported to a ggplot2 build via the ggverbatim() function without pivoting to longer.  Users also won't need without specifying factor ordering.  Thus, we provide an interface for a close visual match between the table input and the visual output. 
 
 ## Installation
 
@@ -59,7 +73,6 @@ vis_arrangement
 vis_arrangement
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
 
 ```{r cars}
 vis_arrangement %>% 
@@ -79,11 +92,60 @@ vis_arrangement %>%
 # Therefore
 
 ```{r}
-readLines("R/ggverbatim.R") ->
-verbatim_code
+knitrExtra:::chunk_to_r("ggverbatim")
 ```
 
-```{r, code = verbatim_code}
+
+```{r ggverbatim}
+#' Title
+#'
+#' @param data
+#' @param row_var_name
+#' @param cols_var_name
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' Titanic %>%
+#'   data.frame() %>%
+#'   tibble() %>%
+#'   uncount(Freq) %>%
+#'   count(Survived, Sex) %>%
+#'   pivot_wider(names_from = Sex, values_from = n) ->
+#'   vis_arrangement
+#'
+#'   vis_arrangement %>%
+#'   ggverbatim()
+ggverbatim <- function(data, cat_cols = 1,  row_var_name = NULL, cols_var_name = "x", value_var_name = NULL){
+
+  message("Variables that represented visually are ; e.g.  aesthetic mappying are 'x', and " |> paste(row_var_name))
+
+  row_var_name <- names(data)[1]
+  names(data)[1] <- "row_var"
+
+  col_headers <- names(data)
+  col_headers <- col_headers[2:length(col_headers)]
+
+  data %>%
+    mutate(row_var = fct_inorder(row_var)) %>%
+    pivot_longer(cols = -cat_cols) %>%
+    mutate(name = factor(name, levels = col_headers)) %>%
+    rename(x = name) ->
+  pivoted
+
+  pivoted %>%
+    ggplot() +
+    aes(x = x) +
+    labs(x = cols_var_name) +
+    aes(y = row_var) +
+    labs(y = row_var_name) +
+    aes(label = value) +
+    aes(fill = value) +
+    scale_x_discrete(position = "top") +
+    scale_y_discrete(limits=rev)
+
+}
 ```
 
 
@@ -100,7 +162,7 @@ vis_arrangement %>%
 
 # Another example; corrr
 
-The corrr project is designed to make correlation fit the 'tidy' paradigmn. the output of correlate is treated like a data frames in the ggplot2 setting due to the dispatch methodes used.
+The corrr project is designed to make correlation fit the 'tidy' paradigmn. the output of correlate is treated like a data frames in the ggplot2 setting due to the dispatch methods used.
 
 
 ```{r}
@@ -140,7 +202,12 @@ library(dplyr)
 dat <- read_csv("data-raw/API_AG.LND.ARBL.ZS_DS2_en_csv_v2_5734536/API_AG.LND.ARBL.ZS_DS2_en_csv_v2_5734536.csv", skip = 3) 
 
 dat %>% 
-  select(`Country Name`, `1961`:`1970`)
+  arrange(-`1961`) %>%  
+  select(`Country Name`, `1961`:`1970`) %>% 
+  slice(1:10) %>% 
+  ggverbatim() + 
+  geom_tile(color = "white") + 
+  geom_text(color = "white")
 
 
 ```
